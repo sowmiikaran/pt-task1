@@ -1,157 +1,196 @@
 # pt-task1
 
-Collection of 5 Python tasks for the pt-task1 assignment.
+Collection of five small CLI programming tasks. This README documents each of the five task files in the repository, how to run them, required dependencies, and short examples.
 
-## Overview
-
-This repository contains five Python tasks (task01 — task05). Each task is implemented as a standalone script in the repository root. The README documents how to run each task, expected inputs/outputs (placeholders), and how to test them. If a script requires command-line arguments, input files, or interactive input, the specific usage is shown in each task section below.
-
-## Repository structure
-
-- task01 — Python script for Task 1
-- task02 — Python script for Task 2
-- task03 — Python script for Task 3
-- task04 — Python script for Task 4
-- task05 — Python script for Task 5
-- README.md — this file
-
-> Note: The task files are Python scripts. They may or may not have the `.py` extension; run them with `python` or `python3` (examples below).
-
-## Requirements
-
-- Python 3.8+ recommended
-- (Optional) virtual environment:
-  - python -m venv .venv
-  - source .venv/bin/activate  # Linux/macOS
-  - .venv\Scripts\activate     # Windows
-- If the repo includes dependencies, install them via:
-  - pip install -r requirements.txt
-
-## Running the tasks
-
-General patterns:
-
-- Run a script directly with Python:
-  - python task01
-  - python task02
-- If scripts accept arguments:
-  - python task01 arg1 arg2
-- If scripts read from stdin, pipe input:
-  - echo "input" | python task01
-
-Below each task has a short template with placeholders. Replace placeholders with the exact behavior after reviewing the script.
+Note: an automated language analysis reported "Python 100%". However Task 01 is implemented in Java. Each task file is listed below with the language detected from its contents.
 
 ---
 
-### Task 1 (task01)
+## Repository files
 
-Description
-- Short description: Placeholder — briefly state what the task does (e.g., "Compute the factorial of a number", "Filter lines that match a pattern", etc.)
-
-Usage
-- python task01 [args]
-- Example (no args):
-  - python task01
-  - Expected output: <describe expected stdout>
-- Example (with args):
-  - python task01 42
-  - Expected output: 1405006117752879898543142606244511569936384000000000
-
-Notes
-- If the script reads from stdin: echo "input" | python task01
-- If the script writes to a file, mention the output file path
+- task01 — Java: temperature converter (public class `PRODIGY_SD_01`)
+- task02 — Python: number guessing game
+- task03 — Python: CLI contact manager (JSON persistence)
+- task04 — Python: Sudoku solver (backtracking + MRV heuristic)
+- task05 — Python: web scraper for books.toscrape.com (requests + BeautifulSoup)
 
 ---
 
-### Task 2 (task02)
+## Prerequisites
 
-Description
-- Short description: Placeholder — what this script calculates or transforms.
+- Java JDK 8+ (for Task 01)
+- Python 3.7+ (recommended 3.8+) for Tasks 02–05
+- Python packages (for Task 05): requests, beautifulsoup4
+  - Install with:
+    - pip install requests beautifulsoup4
 
-Usage
-- python task02 [args]
-- Example:
-  - python task02 input.txt
-  - Expected output: <describe>
-
-Notes
-- List any edge cases the script handles or assumptions (e.g., expects integers, non-empty files)
+General notes:
+- Scripts include a shebang for Unix. You can run them directly if the file is executable, or run via `python3`.
+- If a file is missing a .py or .java extension in your local copy, you can run it by passing the file to the appropriate interpreter or renaming it as explained per task.
 
 ---
 
-### Task 3 (task03)
+## Task 01 — Temperature Converter (Java)
 
-Description
-- Short description: Placeholder — e.g., more complex logic, uses third-party libraries, etc.
+File: `task01` (source contains `public class PRODIGY_SD_01`)
 
-Usage
-- python task03 [args]
-- Example:
-  - python task03 --option value
-  - Expected output: <describe>
+Language: Java
 
-Dependencies
-- If this task requires extra packages, list them here (e.g., numpy, pandas).
+What it does:
+- Interactive program that reads a numeric temperature and an original unit (C, F, or K) and prints conversions to Celsius, Fahrenheit and Kelvin.
+
+How to run:
+1. Save or rename the file to `PRODIGY_SD_01.java` (the filename must match the public class).
+2. Compile:
+   - javac PRODIGY_SD_01.java
+3. Run:
+   - java PRODIGY_SD_01
+
+Example session:
+- Enter temperature value: 100
+- Enter original unit (C for Celsius, F for Fahrenheit, K for Kelvin): F
+
+Output:
+- Converted Temperatures:
+- Celsius: 37.78
+- Fahrenheit: 100.00
+- Kelvin: 310.93
+
+Notes:
+- The program validates numeric input and unit (C, F, K). Unknown unit prints a friendly error message.
+- To use non-interactive mode, modify source to accept command-line args or redirect stdin.
 
 ---
 
-### Task 4 (task04)
+## Task 02 — Number Guessing Game (Python)
 
-Description
-- Short description: Placeholder
+File: `task02` (executable script with shebang)
 
-Usage
-- python task04 [args]
-- Example:
-  - python task04 "some input"
-  - Expected output: <describe>
+Language: Python 3
 
-Notes
-- Mention if script has interactive prompts or requires environment variables.
+What it does:
+- Simple interactive game. Program chooses a random integer between 1 and 100 and prompts the user to guess until correct. It gives feedback ("Too low", "Too high") and reports number of attempts.
+
+How to run:
+- Make executable and run:
+  - chmod +x task02
+  - ./task02
+- Or run with Python:
+  - python3 task02
+
+Notes:
+- No external dependencies required (stdlib only).
+- Safe to run locally; interactive stdin is required.
 
 ---
 
-### Task 5 (task05)
+## Task 03 — Contact Manager (Python)
 
-Description
-- Short description: Placeholder
+File: `task03` (executable script with shebang)
 
-Usage
-- python task05 [args]
-- Example:
-  - python task05 data.csv
-  - Expected output: <describe>
+Language: Python 3
 
-Tests
-- If there are tests, run them with:
-  - python -m pytest
-  - or
-  - python -m unittest discover
+What it does:
+- CLI contact manager with JSON persistence (stores data in `contacts.json` in the working directory).
+- Features: add, list, view, edit, delete, search contacts.
 
-## How to update this README with exact details
+How to run:
+- Make executable and run:
+  - chmod +x task03
+  - ./task03
+- Or:
+  - python3 task03
 
-To provide precise usage, examples, and expected outputs I need the contents of each task script. You can:
+Behavior details:
+- Adds contacts with an auto-incrementing integer ID.
+- `contacts.json` is created next to the script when changes are saved.
+- Uses only the Python standard library (json, os, typing).
 
-- Allow the repository to be read (so I can fetch the scripts), or
-- Paste each script into the chat, or
-- Tell me key details for each task (what it does, arguments, input/output examples)
+Notes:
+- Back up `contacts.json` if you want to preserve entries before testing.
+- The program is interactive and menu-driven.
 
-Once I have that, I will:
-1. Replace the placeholder descriptions with exact summaries.
-2. Add real usage examples and sample inputs/outputs.
-3. Add any dependency installation steps required.
+---
 
-## Contributing
+## Task 04 — Sudoku Solver (Python)
 
-If you want to improve any task or add documentation:
-- Fork the repo
-- Create a branch with your changes
-- Open a pull request with a clear description of changes
+File: `task04` (executable script with shebang)
 
-## License
+Language: Python 3
 
-Specify the project license here (e.g., MIT). If none is intended, add "All rights reserved."
+What it does:
+- Automatic Sudoku solver using backtracking with MRV (minimum remaining values) heuristic.
+- Accepts puzzle input in several forms: 81-char puzzle string or a file with 9 lines of digits/`0`/`.` placeholders.
 
-## Contact
+How to run:
+- Basic demo:
+  - python3 task04
+- Provide puzzle string:
+  - python3 task04 --puzzle "530070000600195000098000060800060003400803001700020006060000280000419005000080079"
+- Provide file input:
+  - python3 task04 --file puzzle.txt
+- Find all solutions (may be slow for ambiguous puzzles):
+  - python3 task04 --all --puzzle "<puzzle_string>"
 
-For questions and clarifications, open an issue or contact the repository owner.
+Notes:
+- Requires Python 3.7+.
+- The solver prints the solved grid in a readable format.
+- If your local copy of `task04` is truncated, fetch the full file from the repository before running.
+
+---
+
+## Task 05 — Books Scraper (Python)
+
+File: `task05` (executable script with shebang)
+
+Language: Python 3
+
+What it does:
+- Scrapes product (book) data from books.toscrape.com (title, price, rating, availability, product page URL) and writes results to a CSV.
+
+Dependencies:
+- requests
+- beautifulsoup4
+
+Install dependencies:
+- pip install requests beautifulsoup4
+
+How to run:
+- Basic run (default start URL and output file):
+  - python3 task05
+- Provide start URL and output path:
+  - python3 task05 --start-url "https://books.toscrape.com/catalogue/category/books_1/index.html" --output books.csv
+- Limit pages or increase verbosity:
+  - python3 task05 --max-pages 5 --verbose
+
+Notes & responsible scraping:
+- The script includes polite delays and retry logic; respect robots.txt and site terms of service.
+- Use small `--max-pages` and sensible delays when testing.
+- The CSV headers: title, price, rating, rating_text, product_page_url, availability.
+
+---
+
+## Common tips
+
+- If a file has no extension in the repository, you can still run it using the appropriate interpreter (e.g., `python3 task03`) or rename it to add the correct extension for convenience (e.g., `task03.py`).
+- To run scripts directly on Unix-like systems:
+  - Ensure the first line (shebang) exists (most Python tasks include it).
+  - Mark the file executable: chmod +x task03
+  - Then run: ./task03
+- For Java (Task 01) the file name must match the public class name exactly.
+
+---
+
+## Want me to update the README in the repo?
+
+I can:
+- Commit this README.md into the repository (create a branch and open a PR), or
+- Provide a raw README.md file text for you to paste and commit.
+
+Tell me which you prefer and, if you want a commit/PR, provide the branch name and PR title. If you want me to inspect each task file and add usage examples (or tests), say "inspect all" and I'll produce a more detailed per-file section with expected I/O and sample runs.
+
+---
+
+## License / Contribution
+
+If you want a license added (MIT, Apache-2.0, GPL-3.0, etc.) or a CONTRIBUTING.md, tell me which license and I will prepare the file.
