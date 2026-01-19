@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+"""
+Scrape product data (title, price, rating) from books.toscrape.com and save to CSV.
+
+Usage example:
+    python scrape_books.py \
+      --start-url https://books.toscrape.com/catalogue/category/books_1/index.html \
+      --output books.csv
+"""
+from __future__ import annotations
+import argparse
+import csv
+import logging
+import random
+import re
+import time
+from typing import Optional
+from urllib.parse import urljoin
+
+import requests
+from bs4 import BeautifulSoup
+from requests.adapters import HTTPAdapter, Retry
+
+# Map textual rating to numeric
+RATING_MAP = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; books-scraper/1.0; +https://example.local/)"
+}
+
+
+def create_session() -> requests.Session:
+    s = requests.Session()
+    retries = Retry(total=3, backoff_factor=0.5, status_forcelist=(500, 502, 503, 504))
+    s.mount("https://", HTTPAdapter(max_retries=retries))
+    s.mount("http://", HTTPAdapter(max_retries=retries))
+    s.headers.update(HEADERS)
+    return s
+
+
+def get_soup(session: requests.Session, url: str, timeout: float = 10.0) -> Optional[BeautifulSoup]:
+    try:
+        r = session.get(url, timeout=timeout)
+        r.raise_for_status()
+        return BeautifulSoup(r.text, "html.parser")
+    except Exception as e:
+        logging.warning("Failed to GET %s: %s", url, e)
+        return None
+
+
+def parse_product_article(article, base_url: str) -> dict:
+    # Title and product link
+    h3 = article.find("h3")
+    a = h3.find("a")
+    title = a["title"].strip() if a and a.get("title") else a.text.strip()
+    href = a["href"]
+    product_url = urljoin(base_url, href)
+
+    # Price
+    price_tag = article.find("p", class_="price_color")
+    price_text = price_tag.text.strip() if price_tag else ""
+    m = re.search(r"[\d\.]+", price_text)
+    price = float(m.group()) if m else None
+
+    # Rating
+    rating_p = article.find("p", class_="star-rating")
+    rating_text = None
+    rating = None
+    if rating_p and rating_p.has_attr("class"):
+        classes = rating_p["class"]
+        # classes typically: ["star-rating", "Three"]
+        for c in classes:
+            if c in RATING_MAP:
+                rating_text = c
+                rating = RATING_MAP[c]
+                break
+
+    # Availability (optional)
+    avail = ""
+    avail_tag = article.find("p", class_="instock availability")
+    if avail_tag:
+        avail = " ".join(avail_tag.text.split()).strip()
+
+    return {
+        "title": title,
+        "price": price,
+        "rating": rating,
+        "rating_text": rating_text,
+        "product_page_url": product_url,
+        "availability": avail,
+    }
+
+
+def scrape(start_url: str, output_file: str, min_delay: float = 1.0, max_delay: float = 3.0,
+           max_pages: Optional[int] = None, verbose: bool = False) -> None:
+    session = create_session()
+    url = start_url
+    page_count = 0
+
+    fieldnames = ["title", "price", "rating", "rating_text", "product_page_url", "availability"]
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+        while url:
+            if max_pages and page_count >= max_pages:
+                logging.info("Reached max_pages (%s). Stopping.", max_pages)
+                break
+
+            logging.info("Fetching page: %s", url)
+            soup = get_soup(session, url)
+            if soup is None:
+                logging.warning("Stopping because page failed to load: %s", url)
+                break
+
+            articles = soup.select("article.product_pod")
+            if not articles:
+                logging.info("No products found on %s — stopping.", url)
+                break
+
+            for art in articles:
+                item = parse_product_article(art, url)
+                writer.writerow(item)
+                if verbose:
+                    logging.info("Scraped: %s | £%s | %s", item["title"], item["price"], item["rating_text"])
+
+            page_count += 1
+
+            # Find next page
+            next_link = soup.select_one("li.next > a")
+            if next_link and next_link.get("href"):
+                next_href = next_link["href"]
+                url = urljoin(url, next_href)
+            else:
+                logging.info("No next page link found. Finished.")
+                break
+
+            # Polite delay
+            sleep_time = random.uniform(min_delay, max_delay)
+            logging.debug("Sleeping %.2fs", sleep_time)
+            time.sleep(sleep_time)
+
+    logging.info("Scraping complete. Wrote %s", output_file)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Scrape products from books.toscrape.com and save to CSV")
+    parser.add_argument("--start-url", type=str, default="https://books.toscrape.com/",
+                        help="Start URL for scraping (default: https://books.toscrape.com/)")
+    parser.add_argument("--output", type=str, default="products.csv", help="Output CSV filename")
+    parser.add_argument("--min-delay", type=float, default=1.0, help="Min delay between requests (seconds)")
+    parser.add_argument("--max-delay", type=float, default=3.0, help="Max delay between requests (seconds)")
+    parser.add_argument("--max-pages", type=int, default=None, help="Max pages to traverse (optional)")
+    parser.add_argument("--verbose", action="store_true", help="Verbose logging")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
+                        format="%(asctime)s %(levelname)s: %(message)s")
+
+    scrape(args.start_url, args.output, args.min_delay, args.max_delay, args.max_pages, args.verbose)
+
+
+if __name__ == "__main__":
+    main()
