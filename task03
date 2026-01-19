@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+"""
+contacts.py - Simple CLI Contact Manager with JSON persistence.
+
+Features:
+- Add, list, view, edit, delete, search contacts
+- Stores contacts in contacts.json (same directory)
+"""
+
+import json
+import os
+from typing import List, Dict, Optional
+
+DATA_FILE = "contacts.json"
+
+
+class Contact:
+    def __init__(self, contact_id: int, name: str, phone: str, email: str):
+        self.id = contact_id
+        self.name = name
+        self.phone = phone
+        self.email = email
+
+    def to_dict(self) -> Dict:
+        return {"id": self.id, "name": self.name, "phone": self.phone, "email": self.email}
+
+    @staticmethod
+    def from_dict(d: Dict):
+        return Contact(contact_id=d["id"], name=d["name"], phone=d["phone"], email=d["email"])
+
+
+class ContactManager:
+    def __init__(self, filename: str = DATA_FILE):
+        self.filename = filename
+        self.contacts: List[Contact] = []
+        self._load()
+
+    def _load(self):
+        if not os.path.exists(self.filename):
+            self.contacts = []
+            return
+        try:
+            with open(self.filename, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.contacts = [Contact.from_dict(item) for item in data]
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Warning: failed to read {self.filename}: {e}")
+            self.contacts = []
+
+    def _save(self):
+        try:
+            with open(self.filename, "w", encoding="utf-8") as f:
+                json.dump([c.to_dict() for c in self.contacts], f, indent=2, ensure_ascii=False)
+        except IOError as e:
+            print(f"Error: failed to write {self.filename}: {e}")
+
+    def _next_id(self) -> int:
+        if not self.contacts:
+            return 1
+        return max(c.id for c in self.contacts) + 1
+
+    def add_contact(self, name: str, phone: str, email: str) -> Contact:
+        contact = Contact(self._next_id(), name.strip(), phone.strip(), email.strip())
+        self.contacts.append(contact)
+        self._save()
+        return contact
+
+    def list_contacts(self) -> List[Contact]:
+        return sorted(self.contacts, key=lambda c: c.name.lower())
+
+    def find_by_id(self, contact_id: int) -> Optional[Contact]:
+        for c in self.contacts:
+            if c.id == contact_id:
+                return c
+        return None
+
+    def search(self, term: str) -> List[Contact]:
+        term_lower = term.strip().lower()
+        return [
+            c for c in self.contacts
+            if term_lower in c.name.lower() or term_lower in c.phone.lower() or term_lower in c.email.lower()
+        ]
+
+    def update_contact(self, contact_id: int, name: Optional[str] = None, phone: Optional[str] = None, email: Optional[str] = None) -> bool:
+        c = self.find_by_id(contact_id)
+        if not c:
+            return False
+        if name is not None:
+            c.name = name.strip()
+        if phone is not None:
+            c.phone = phone.strip()
+        if email is not None:
+            c.email = email.strip()
+        self._save()
+        return True
+
+    def delete_contact(self, contact_id: int) -> bool:
+        c = self.find_by_id(contact_id)
+        if not c:
+            return False
+        self.contacts.remove(c)
+        self._save()
+        return True
+
+
+def input_non_empty(prompt: str) -> str:
+    while True:
+        s = input(prompt).strip()
+        if s:
+            return s
+        print("Please enter a non-empty value.")
+
+
+def main_menu():
+    print("\nContact Manager")
+    print("----------------")
+    print("1) List contacts")
+    print("2) Add contact")
+    print("3) View contact")
+    print("4) Edit contact")
+    print("5) Delete contact")
+    print("6) Search contacts")
+    print("0) Exit")
+
+
+def show_contacts_table(contacts: List[Contact]):
+    if not contacts:
+        print("No contacts found.")
+        return
+    print(f"\n{'ID':<4} {'Name':<25} {'Phone':<18} {'Email'}")
+    print("-" * 70)
+    for c in contacts:
+        name = (c.name[:22] + "...") if len(c.name) > 25 else c.name
+        print(f"{c.id:<4} {name:<25} {c.phone:<18} {c.email}")
+
+
+def prompt_int(prompt: str) -> Optional[int]:
+    s = input(prompt).strip()
+    if not s:
+        return None
+    try:
+        return int(s)
+    except ValueError:
+        print("Invalid number.")
+        return None
+
+
+def run_cli():
+    manager = ContactManager()
+
+    while True:
+        main_menu()
+        choice = input("Choose an option: ").strip()
+        if choice == "1":
+            contacts = manager.list_contacts()
+            show_contacts_table(contacts)
+
+        elif choice == "2":
+            print("\nAdd Contact")
+            name = input_non_empty("Name: ")
+            phone = input_non_empty("Phone: ")
+            email = input_non_empty("Email: ")
+            contact = manager.add_contact(name, phone, email)
+            print(f"Added contact with ID {contact.id}.")
+
+        elif choice == "3":
+            cid = prompt_int("Enter contact ID to view (or press Enter to cancel): ")
+            if cid is None:
+                continue
+            c = manager.find_by_id(cid)
+            if not c:
+                print("Contact not found.")
+                continue
+            print("\nContact details")
+            print(f"ID:    {c.id}")
+            print(f"Name:  {c.name}")
+            print(f"Phone: {c.phone}")
+            print(f"Email: {c.email}")
+
+        elif choice == "4":
+            cid = prompt_int("Enter contact ID to edit (or press Enter to cancel): ")
+            if cid is None:
+                continue
+            c = manager.find_by_id(cid)
+            if not c:
+                print("Contact not found.")
+                continue
+            print("\nEditing contact (press Enter to keep current value):")
+            new_name = input(f"Name [{c.name}]: ").strip()
+            new_phone = input(f"Phone [{c.phone}]: ").strip()
+            new_email = input(f"Email [{c.email}]: ").strip()
+            # Use None to indicate no change
+            name_val = new_name if new_name != "" else None
+            phone_val = new_phone if new_phone != "" else None
+            email_val = new_email if new_email != "" else None
+            updated = manager.update_contact(cid, name=name_val, phone=phone_val, email=email_val)
+            if updated:
+                print("Contact updated.")
+            else:
+                print("Failed to update contact.")
+
+        elif choice == "5":
+            cid = prompt_int("Enter contact ID to delete (or press Enter to cancel): ")
+            if cid is None:
+                continue
+            c = manager.find_by_id(cid)
+            if not c:
+                print("Contact not found.")
+                continue
+            confirm = input(f"Are you sure you want to delete '{c.name}'? (y/N): ").strip().lower()
+            if confirm == "y":
+                if manager.delete_contact(cid):
+                    print("Contact deleted.")
+                else:
+                    print("Failed to delete contact.")
+            else:
+                print("Delete canceled.")
+
+        elif choice == "6":
+            term = input("Search term (name, phone, or email): ").strip()
+            if not term:
+                print("No search term entered.")
+                continue
+            results = manager.search(term)
+            show_contacts_table(results)
+
+        elif choice == "0":
+            print("Goodbye.")
+            break
+
+        else:
+            print("Invalid choice. Please choose a valid option.")
+
+
+if __name__ == "__main__":
+    run_cli()
