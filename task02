@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+import random
+
+def main():
+    low, high = 1, 100
+    secret = random.randint(low, high)
+    attempts = 0
+    print(f"Guess the number between {low} and {high}.")
+
+    while True:
+        try:
+            guess = int(input("Your guess: ").strip())
+        except ValueError:
+            print("Please enter a valid integer.")
+            continue
+
+        attempts += 1
+
+        if guess < secret:
+            print("Too low. Try again.")
+        elif guess > secret:
+            print("Too high. Try again.")
+        else:
+            print(
+                f"Correct! The number was {secret}. You guessed it in {attempts} "
+                f"attempt{'s' if attempts != 1 else ''}."
+            )
+            break
+
+if __name__ == "__main__":
+    main()
